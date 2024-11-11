@@ -40,7 +40,7 @@ jobs:
       - name: Push Docker image to Amazon ECR
         run: |
           # Define ECR repository URI
-          REPOSITORY_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/your-repo-name"
+          REPOSITORY_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/checkpoint-task"
           # Push Docker image to ECR
           docker push "$REPOSITORY_URI:latest"
 
