@@ -7,6 +7,7 @@ In order to run it on EKS, first clone and follow instructions of repo: https://
 Getting Started
 Prerequisites:
 kubectl
+Docker
 
 
 Setup Instructions
