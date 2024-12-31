@@ -53,7 +53,9 @@ jobs:
       
       # Step 5: Retrieve the ECR url
       - name: Retrieve ECR Name
-        run: ecr_uri=$(aws ssm get-parameter --name /checkpoint/ecr_repository --query "Parameter.Value" --output text)
+        run: |
+          ecr_uri=$(aws ssm get-parameter --name /checkpoint/ecr_repository --query "Parameter.Value" --output text)
+          echo "ECR Repository URL: $ecr_uri"
 
       # Step 6: Log in to Amazon ECR
       - name: Log in to Amazon ECR
