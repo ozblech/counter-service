@@ -16,8 +16,15 @@ jobs:
       # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v3
+        
+      # Step 2: Validate Kubernetes YAMLs
+      - name: Validate YAML files
+        run: |
+          curl -LO https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          ./kubeval **/*.yaml
 
-      # Step 2: Configure AWS credentials
+      # Step 3: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -25,7 +32,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Extract and Increment Version
+      # Step 4: Extract and Increment Version
       - name: Increment Version
         id: version
         run: |
@@ -42,12 +49,12 @@ jobs:
           echo "$NEW_VERSION" > VERSION
           echo "version=$NEW_VERSION" >> $GITHUB_ENV
 
-      # Step 4: Log in to Amazon ECR
+      # Step 5: Log in to Amazon ECR
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 5: Build and tag the Docker image
+      # Step 6: Build and tag the Docker image
       - name: Build Docker image
         run: |
           # Define ECR repository URI
@@ -55,7 +62,7 @@ jobs:
           # Use incremented version from environment variable
           docker build -t "$REPOSITORY_URI:latest" -t "$REPOSITORY_URI:${{ env.version }}" .
 
-      # Step 6: Push the Docker image to ECR
+      # Step 7: Push the Docker image to ECR
       - name: Push Docker image to Amazon ECR
         run: |
           # Define ECR repository URI
@@ -63,7 +70,7 @@ jobs:
           # Push Docker image to ECR
           docker push "$REPOSITORY_URI:${{ env.version }}"
 
-      # Step 7: Commit and Tag New Version
+      # Step 8: Commit and Tag New Version
       - name: Commit and Tag New Version
         run: |
           git config --global user.name "github-actions"
