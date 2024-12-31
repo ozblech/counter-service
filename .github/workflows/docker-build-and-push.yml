@@ -50,29 +50,29 @@ jobs:
           # Save new version to VERSION file
           echo "$NEW_VERSION" > VERSION
           echo "version=$NEW_VERSION" >> $GITHUB_ENV
+      
+      # Step 5: Retrieve the ECR url
+      - name: Retrieve ECR Name
+        run: ecr_uri=$(aws ssm get-parameter --name /checkpoint/ecr_repository --query "Parameter.Value" --output text)
 
-      # Step 5: Log in to Amazon ECR
+      # Step 6: Log in to Amazon ECR
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 6: Build and tag the Docker image
+      # Step 7: Build and tag the Docker image
       - name: Build Docker image
         run: |
-          # Define ECR repository URI
-          REPOSITORY_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/checkpoint-task"
           # Use incremented version from environment variable
-          docker build -t "$REPOSITORY_URI:latest" -t "$REPOSITORY_URI:${{ env.version }}" .
+          docker build -t "$ecr_uri:latest" -t "$ecr_uri:${{ env.version }}" .
 
-      # Step 7: Push the Docker image to ECR
+      # Step 8: Push the Docker image to ECR
       - name: Push Docker image to Amazon ECR
         run: |
-          # Define ECR repository URI
-          REPOSITORY_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/checkpoint-task"
           # Push Docker image to ECR
-          docker push "$REPOSITORY_URI:${{ env.version }}"
+          docker push "$ecr_uri:${{ env.version }}"
 
-      # Step 8: Commit and Tag New Version
+      # Step 9: Commit and Tag New Version
       - name: Commit and Tag New Version
         run: |
           git config --global user.name "github-actions"
