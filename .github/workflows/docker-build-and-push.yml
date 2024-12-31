@@ -58,24 +58,31 @@ jobs:
           echo "ECR Repository URL: $ecr_uri"
           echo "ecr_uri=$ecr_uri" >> $GITHUB_ENV
 
-      # Step 6: Log in to Amazon ECR
+        # Step 6: Retrieve EKS Cluster Name
+      - name: Retrieve EKS Cluster Name
+        run: |
+          eks_cluster=$(aws ssm get-parameter --name /checkpoint/eks_cluster_name --query "Parameter.Value" --output text)
+          echo "EKS Cluster Name: $eks_cluster"
+          echo "eks_cluster=$eks_cluster" >> $GITHUB_ENV
+
+      # Step 7: Log in to Amazon ECR
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 7: Build and tag the Docker image
+      # Step 8: Build and tag the Docker image
       - name: Build Docker image
         run: |
           # Use incremented version from environment variable
           docker build -t "$ecr_uri:latest" -t "$ecr_uri:${{ env.version }}" .
 
-      # Step 8: Push the Docker image to ECR
+      # Step 9: Push the Docker image to ECR
       - name: Push Docker image to Amazon ECR
         run: |
           # Push Docker image to ECR
           docker push "$ecr_uri:${{ env.version }}"
 
-      # Step 9: Commit and Tag New Version
+      # Step 10: Commit and Tag New Version
       - name: Commit and Tag New Version
         run: |
           git config --global user.name "github-actions"
@@ -84,4 +91,38 @@ jobs:
           git commit -m "Increment version to ${{ env.version }}"
           git tag "v${{ env.version }}"
           git push origin main --tags
+
+      # Step 11: Deploy to Kubernetes
+      - name: Deploy to Kubernetes
+        run: |
+          # Ensure the VERSION file exists
+          if [[ ! -f VERSION ]]; then
+            echo "Error: VERSION file not found."
+            exit 1
+          fi
+
+          # Read the version from the VERSION file
+          VERSION=$(cat VERSION)
+
+          # Validate that the VERSION is not empty
+          if [[ -z "$VERSION" ]]; then
+            echo "Error: VERSION file is empty. Please provide a valid version."
+            exit 1
+          fi
+
+          echo "Deploying version: $VERSION"
+          
+          # Define the ECR repository URI
+          REPOSITORY_URI="${{ env.ecr_uri }}"
+
+          # Update the Kubernetes manifest with the correct image version
+          sed -i.bak "s|image: .*:.*|image: $REPOSITORY_URI:$VERSION|" counter-service.yaml
+
+          # Update kubeconfig to use the correct context
+          aws eks update-kubeconfig --region eu-west-3 --name "${{ env.eks_cluster }}"
+
+          # Apply the updated manifest to the Kubernetes cluster
+          kubectl apply -f counter-service.yaml
+
+          echo "Deployment applied with image version: $VERSION"
 
