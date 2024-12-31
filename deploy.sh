@@ -21,11 +21,17 @@ echo "Deploying version: $VERSION"
 # Define the ECR repository URI
 REPOSITORY_URI="881490090336.dkr.ecr.eu-west-3.amazonaws.com/checkpoint-task"
 
+# Create a backup of the original YAML file
+cp counter-service.yaml counter-service.yaml.bak
+
 # Update the Kubernetes manifest with the correct image version
 sed -i "s|image: .*:.*|image: $REPOSITORY_URI:$VERSION|" counter-service.yaml
 
 # Apply the updated manifest to the Kubernetes cluster
 kubectl apply -f counter-service.yaml
+
+# Restore the original YAML file
+mv counter-service.yaml.bak counter-service.yaml
 
 # Confirm deployment
 echo "Deployment applied with image version: $VERSION"
